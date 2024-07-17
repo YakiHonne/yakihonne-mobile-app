@@ -47,6 +47,6 @@ Before you begin, ensure you have met the following requirements:
 ## Development
 
 - Clone the repository: `https://github.com/YakiHonne/yakihonne-mobile-app.git`
-- Navigate to the folder: `cd lib`
+- Navigate to the folder: `cd yakihonne-Open-sourced`
 - Install dependencies: `flutter pub get`
 - Run the app: `flutter run`
