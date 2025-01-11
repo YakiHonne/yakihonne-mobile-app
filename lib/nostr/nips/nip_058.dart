@@ -4,18 +4,6 @@ import 'package:yakihonne/nostr/nips/nip_051.dart';
 
 /// Badges
 class Nip58 {
-  // {
-  //   "pubkey": "alice",
-  //   "kind": 30009,
-  //   "tags": [
-  //     ["d", "bravery"],
-  //     ["name", "Medal of Bravery"],
-  //     ["description", "Awarded to users demonstrating bravery"],
-  //     ["image", "https://nostr.academy/awards/bravery.png", "1024x1024"],
-  //     ["thumb", "https://nostr.academy/awards/bravery_256x256.png", "256x256"],
-  //   ],
-  //   ...
-  // }
   static Badge? getBadgeDefinition(Event event) {
     if (event.kind == 30009) {
       String? identifies, name, description;
@@ -46,17 +34,6 @@ class Nip58 {
     return Event.from(kind: 30009, tags: tags, content: '', privkey: privkey);
   }
 
-  // {
-  //   "id": "<badge award event id>",
-  //   "kind": 8,
-  //   "pubkey": "alice",
-  //   "tags": [
-  //     ["a", "30009:alice:bravery"],
-  //     ["p", "bob", "wss://relay"],
-  //     ["p", "charlie", "wss://relay"],
-  //   ],
-  //   ...
-  // }
   static BadgeAward? getBadgeAward(Event event) {
     if (event.kind == 8) {
       EventCoordinates? coordinates;
@@ -78,18 +55,6 @@ class Nip58 {
     }
   }
 
-  // {
-  //   "kind": 30008,
-  //   "pubkey": "bob",
-  //   "tags": [
-  //     ["d", "profile_badges"],
-  //     ["a", "30009:alice:bravery"],
-  //     ["e", "<bravery badge award event id>", "wss://nostr.academy"],
-  //     ["a", "30009:alice:honor"],
-  //     ["e", "<honor badge award event id>", "wss://nostr.academy"],
-  //   ],
-  //   ...
-  // }
   static List<BadgeAward> getProfileBadges(Event event) {
     if (event.kind == 30008) {
       var tag = event.tags[0];

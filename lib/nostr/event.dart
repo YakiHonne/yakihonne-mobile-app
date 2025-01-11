@@ -8,6 +8,9 @@ import 'package:drift/drift.dart';
 import 'package:pointycastle/export.dart';
 import 'package:yakihonne/database/cache_database.dart';
 import 'package:yakihonne/main.dart';
+import 'package:yakihonne/models/buzz_feed_models.dart';
+import 'package:yakihonne/models/flash_news_model.dart';
+import 'package:yakihonne/models/uncensored_notes_models.dart';
 import 'package:yakihonne/nostr/utils.dart';
 import 'package:yakihonne/utils/botToast_util.dart';
 import 'package:yakihonne/utils/utils.dart';
@@ -53,6 +56,8 @@ class Event {
       'sig': serializer.toJson<String>(sig),
       'tags': serializer.toJson<String>(jsonEncode(tags)),
       'kind': serializer.toJson<int>(kind),
+      'currentUser':
+          serializer.toJson<String>(nostrRepository.usm?.pubKey ?? '-1'),
       'createdAt': serializer.toJson<DateTime>(
         DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
       ),
@@ -186,53 +191,6 @@ class Event {
     );
   }
 
-  // factory Event.from({
-  //   int createdAt = 0,
-  //   required int kind,
-  //   required List<List<String>> tags,
-  //   required String content,
-  //   required String pubkey,
-  //   required String privkey,
-  //   String? subscriptionId,
-  //   bool verify = false,
-  // }) {
-  //   try {
-  //     if (createdAt == 0) createdAt = currentUnixTimestampSeconds();
-
-  //     final id = _processEventId(
-  //       pubkey,
-  //       createdAt,
-  //       kind,
-  //       tags,
-  //       content,
-  //     );
-
-  //     final sig = privkey.isEmpty || privkey == 'signer'
-  //         ? ''
-  //         : _processSignature(
-  //             privkey,
-  //             id,
-  //           );
-
-  //     Amberflutter().signEvent(currentUser: currentUser, eventJson: eventJson);
-
-  //     return Event(
-  //       id,
-  //       pubkey,
-  //       createdAt,
-  //       kind,
-  //       tags,
-  //       content,
-  //       sig,
-  //       subscriptionId: subscriptionId,
-  //       verify: verify,
-  //     );
-  //   } catch (e) {
-  //     BotToastUtils.showError('Error occured while signing the event');
-  //     rethrow;
-  //   }
-  // }
-
   /// Deserialize an event from a JSON
   ///
   /// verify: enable/disable events checks
@@ -321,6 +279,14 @@ class Event {
     );
   }
 
+  static Event? fromString(String content) {
+    try {
+      return Event.fromJson(jsonDecode(content));
+    } catch (_) {
+      return null;
+    }
+  }
+
   String getEventId() {
     // Included for minimum breaking changes
     return _processEventId(
@@ -377,13 +343,188 @@ class Event {
     }
   }
 
+  bool isFlashNews() {
+    final createdAtDate = DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+    );
+
+    String encryption = '';
+    bool isFlashNews = false;
+
+    for (var tag in tags) {
+      var tagLength = tag.length;
+
+      if (tagLength >= 2 &&
+          tag[0] == FN_SEARCH_KEY &&
+          tag[1] == FN_SEARCH_VALUE) {
+        isFlashNews = true;
+      }
+
+      if (tag.first == FN_ENCRYPTION && tag.length > 1) {
+        encryption = tag[1];
+      }
+    }
+
+    if (!isFlashNews || encryption.isEmpty) {
+      return false;
+    }
+
+    return checkAuthenticity(encryption, createdAtDate);
+  }
+
+  bool isBuzzFeed() {
+    final createdAtDate = DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+    );
+
+    String encryption = '';
+    bool isAiFeed = false;
+
+    for (var tag in tags) {
+      var tagLength = tag.length;
+
+      if (tagLength >= 2 &&
+          tag[0] == AF_SEARCH_KEY &&
+          tag[1] == AF_SEARCH_VALUE) {
+        isAiFeed = true;
+      }
+
+      if (tag.first == AF_ENCRYPTION && tag.length > 1) {
+        encryption = tag[1];
+      }
+    }
+
+    if (!isAiFeed || encryption.isEmpty) {
+      return false;
+    }
+
+    return checkAuthenticity(encryption, createdAtDate);
+  }
+
+  bool isUncensoredNote() {
+    final createdAtDate = DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+    );
+
+    String encryption = '';
+    bool isUncensoredNote = false;
+
+    for (var tag in tags) {
+      var tagLength = tag.length;
+
+      if (tagLength >= 2 &&
+          tag[0] == FN_SEARCH_KEY &&
+          tag[1] == UN_SEARCH_VALUE) {
+        isUncensoredNote = true;
+      }
+
+      if (tag.first == FN_ENCRYPTION && tag.length > 1) {
+        encryption = tag[1];
+      }
+    }
+
+    if (!isUncensoredNote || encryption.isEmpty) {
+      return false;
+    }
+
+    return checkAuthenticity(encryption, createdAtDate);
+  }
+
+  bool isSealedNote() {
+    bool isSealed = false;
+
+    for (var tag in tags) {
+      var tagLength = tag.length;
+
+      if (tagLength >= 2 &&
+          tag[0] == FN_SEARCH_KEY &&
+          tag[1] == "SEALED UNCENSORED NOTE") {
+        isSealed = true;
+      }
+    }
+
+    return pubkey == yakihonneHex && isSealed;
+  }
+
+  bool isSimpleNote() {
+    return !isBuzzFeed() &&
+        !isFlashNews() &&
+        !isUncensoredNote() &&
+        !isSealedNote();
+  }
+
+  bool isReply() {
+    bool hasETag = false;
+
+    for (final tag in tags) {
+      if ((tag.first == 'e' && tag.length > 1) ||
+          (tag.first == 'a' && tag.length > 1)) {
+        hasETag = true;
+      }
+    }
+
+    return isSimpleNote() && hasETag;
+  }
+
+  bool isUnRate() {
+    bool hasEncryption = false;
+
+    for (var tag in tags) {
+      if (tag.first == FN_ENCRYPTION && tag.length > 1) {
+        hasEncryption = true;
+      }
+    }
+
+    return hasEncryption && kind == EventKind.REACTION;
+  }
+
+  bool isTopicEvent() {
+    bool isTopicTag = false;
+
+    for (var tag in tags) {
+      if (tag.first == 'd' && tag.length > 1 && tag[1] == yakihonneTopicTag) {
+        isTopicTag = true;
+      }
+    }
+
+    return isTopicTag && kind == EventKind.APP_CUSTOM;
+  }
+
+  bool isFollowingYakihonne() {
+    if (kind == EventKind.CONTACT_LIST) {
+      bool isFollowingYakihonne = false;
+
+      for (var tag in tags) {
+        if (tag.first == 'p' && tag.length > 1 && tag[1] == yakihonneHex) {
+          isFollowingYakihonne = true;
+        }
+      }
+
+      return isFollowingYakihonne;
+    } else {
+      return false;
+    }
+  }
+
+  bool isVideo() =>
+      kind == EventKind.VIDEO_HORIZONTAL || kind == EventKind.VIDEO_VERTICAL;
+
+  bool isCuration() =>
+      kind == EventKind.CURATION_ARTICLES || kind == EventKind.CURATION_VIDEOS;
+
+  bool isLongForm() => kind == EventKind.LONG_FORM;
+
+  bool isLongFormDraft() => kind == EventKind.LONG_FORM_DRAFT;
+
+  bool isRelaysList() => kind == EventKind.RELAY_LIST_METADATA;
+
   bool isUserTagged() {
     bool isTagged = false;
 
     for (var tag in tags) {
       if (tag.first == 'p' &&
           tag.length >= 2 &&
-          tag[1] == nostrRepository.userStatusModel!.pubKey) {
+          tag[1] == nostrRepository.usm!.pubKey) {
         isTagged = true;
       }
     }
@@ -437,6 +578,8 @@ class Event {
 
     return publishedAt;
   }
+
+  bool isAuthor() => pubkey == nostrRepository.usm!.pubKey;
 
   static Future<Event?> genEvent({
     int createdAt = 0,
@@ -503,7 +646,7 @@ class Event {
       }
     } catch (e) {
       BotToastUtils.showError('Error occured while signing the event');
-      lg.i('message');
+
       return null;
     }
   }

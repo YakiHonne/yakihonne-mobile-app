@@ -115,11 +115,7 @@ class Nip44 {
   }) async {
     final enContent = await encryptContent(content, receiver, sender, privkey);
     List<List<String>> tags = Nip4.toTags(receiver, replyId, expiration);
-    // if (subContent != null && subContent.isNotEmpty) {
-    //   String enSubContent =
-    //       await encryptContent(subContent, receiver, sender, privkey);
-    //   tags.add(['subContent', enSubContent]);
-    // }
+
     return await Event.from(
       kind: 44,
       tags: tags,

@@ -43,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -60,17 +60,34 @@ class AppDatabase extends _$AppDatabase {
             ],
           );
         }
+
+        if (from == 2) {
+          await customStatement(
+              'ALTER TABLE nip01_event ADD COLUMN current_user TEXT');
+
+          await customStatement(
+              "UPDATE nip01_event SET current_user = '-1' WHERE current_user IS NULL");
+        }
       },
     );
+  }
+
+  // ** update database
+  Future<void> updateNip01Events(String val) async {
+    final comp = Nip01EventCompanion(
+      currentUser: Value(val),
+    );
+
+    await update(nip01Event).write(comp);
   }
 
   // ** Metadata
   Future<void> getMetadata() async {
     try {
       final metadatas = await select(metadata).get();
-
-      if (metadatas.isNotEmpty)
+      if (metadatas.isNotEmpty) {
         authorsCubit.setAuthors(metadatas.map((e) => e).toList());
+      }
     } catch (e, stack) {
       lg.i(stack);
     }
@@ -88,7 +105,9 @@ class AppDatabase extends _$AppDatabase {
         addMetadata(user);
       } else if (selectedMetadata.createdAt.isBefore(user.createdAt)) {
         await update(metadata).replace(
-          MetadataData.fromJson(user.toLocalMetadata()),
+          MetadataData.fromJson(
+            user.toLocalMetadata(),
+          ),
         );
       }
     } catch (e, stack) {
@@ -168,6 +187,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ** Dms info
+
   Future<List<DmInfoData>> getDmInfosByUser(String pubkey) async {
     try {
       final dmInfos = await (select(dmInfo)

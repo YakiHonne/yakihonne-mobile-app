@@ -167,33 +167,10 @@ class Nip17 {
   }
 
   static Future<Event?> decodeNip17Event(Event event) async {
-    // Completer<Event?> completer = Completer<Event?>();
-    // final receivePort = ReceivePort();
-    // receivePort.listen((message) {
-    //   if (!completer.isCompleted) {
-    //     completer.complete(Event.fromJson(message, verify: false));
-    //   }
-    // });
-
-    // var rootToken = RootIsolateToken.instance!;
-    // Map<String, dynamic> map = {
-    //   'event': event.toJson(),
-    //   'privkey': nostrRepository.userStatusModel!.privKey,
-    //   'pubkey': nostrRepository.userStatusModel!.pubKey,
-    //   'sendPort': receivePort.sendPort,
-    //   'token': rootToken,
-    //   'nostrRepository': nostrRepository,
-    // };
-
-    // Isolate.spawn(
-    //   decodeNip24InIsolate,
-    //   map,
-    // );
-
     Event? innerEvent = await Nip17.decode(
       event,
-      nostrRepository.userStatusModel!.pubKey,
-      nostrRepository.userStatusModel!.privKey,
+      nostrRepository.usm!.pubKey,
+      nostrRepository.usm!.privKey,
     );
 
     return innerEvent;

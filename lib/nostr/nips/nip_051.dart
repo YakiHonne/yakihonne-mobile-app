@@ -163,34 +163,6 @@ class Nip51 {
 
     return Lists(event.pubkey, identifier, people, bookmarks, event.createdAt);
   }
-
-  // static Curation encodeCuration(
-  //   Curation curation,
-  //   String pubKey,
-  //   String privKey,
-  // ) {
-  //   String identifier = '';
-  //   String title = '';
-  //   String excerpt = '';
-  //   String image = '';
-  //   List<EventCoordinates> eventsIds = [];
-
-  //   for (List<String> tag in event.tags) {
-  //     if (tag.first == 'd' && identifier.isEmpty) {
-  //       identifier = tag[1];
-  //     } else if (tag.first == 'title') {
-  //       title = tag[1];
-  //     } else if (tag.first == 'excerpt') {
-  //       excerpt = tag[1];
-  //     } else if (tag.first == 'image') {
-  //       image = tag[1];
-  //     } else if (tag.first == 'a') {
-  //       eventsIds.add(Nip33.getEventCoordinates(tag));
-  //     }
-  //   }
-
-  //   return Event();
-  // }
 }
 
 class People {

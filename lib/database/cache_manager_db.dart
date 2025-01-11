@@ -44,6 +44,11 @@ class CacheManagerDB {
     );
   }
 
+// ** add multi events
+  static Future<void> updateNip01Events(String val) async {
+    await appDatabase.updateNip01Events(val);
+  }
+
   // ** add multi events
   static Future<void> addMultiEvents(List<Event> events) async {
     await appDatabase.addMultiEvents(events);

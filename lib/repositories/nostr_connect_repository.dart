@@ -237,26 +237,6 @@ class NostrConnect {
     );
   }
 
-  // Future connectAndWaitRelays(List<String> relays,
-  //     {bool? fromIdleState}) async {
-  //   List<String> toBeStopped = [];
-  //   final nostrConnectRelays = this.relays();
-
-  //   for (final relay in nostrConnectRelays) {
-  //     if (!relays.contains(relay)) {
-  //       toBeStopped.add(relay);
-  //     }
-  //   }
-
-  //   if (toBeStopped.isNotEmpty) {
-  //     closeConnect(toBeStopped);
-  //   }
-
-  //   await Future.wait(
-  //     relays.map((e) => connect(e, fromIdleState: fromIdleState)).toList(),
-  //   );
-  // }
-
   Future closeConnect(List<String> relays) async {
     for (final relay in relays) {
       if (webSockets.containsKey(relay)) {

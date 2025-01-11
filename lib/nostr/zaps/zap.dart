@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:bech32/bech32.dart';
 import 'package:yakihonne/repositories/http_functions_repository.dart';
@@ -76,6 +75,7 @@ class Zap {
     required List<String> relays,
     String? pollOption,
     String? comment,
+    bool? removeNostrEvent,
   }) async {
     var lnurlResponse = await getLnurlResponse(lud16Link);
 
@@ -102,41 +102,47 @@ class Zap {
           comment = comment.substring(0, commentNum);
         }
         callback += '&comment=${Uri.encodeQueryComponent(comment)}';
+        // callback += '&memo=${Uri.encodeQueryComponent(comment)}';
+        // callback += '&description=${Uri.encodeQueryComponent(comment)}';
         eventContent = comment;
       }
     }
 
-    var tags = [
-      ['relays', ...relays],
-      ['amount', amount.toString()],
-      ['lnurl', lnurl],
-      ['p', recipientPubkey],
-    ];
+    if (removeNostrEvent == null || !removeNostrEvent) {
+      var tags = [
+        ['relays', ...relays],
+        ['amount', amount.toString()],
+        ['lnurl', lnurl],
+        ['p', recipientPubkey],
+      ];
 
-    if (StringUtil.isNotBlank(eventId)) {
-      tags.add(['e', eventId!]);
+      if (StringUtil.isNotBlank(eventId)) {
+        tags.add(['e', eventId!]);
+      }
+
+      if (StringUtil.isNotBlank(aTag)) {
+        tags.add(['a', aTag!]);
+      }
+
+      if (StringUtil.isNotBlank(pollOption)) {
+        tags.add(['poll_option', pollOption!]);
+      }
+
+      var event = await Event.genEvent(
+        kind: EventKind.ZAP_REQUEST,
+        tags: tags,
+        content: eventContent,
+        pubkey: currentPubkey,
+        privkey: currentPrivkey,
+      );
+
+      if (event != null) {
+        var eventStr = Uri.encodeQueryComponent(jsonEncode(event));
+        callback += '&nostr=$eventStr';
+      }
     }
 
-    if (StringUtil.isNotBlank(aTag)) {
-      tags.add(['a', aTag!]);
-    }
-
-    if (StringUtil.isNotBlank(pollOption)) {
-      tags.add(['poll_option', pollOption!]);
-    }
-
-    var event = Event.from(
-      kind: EventKind.ZAP_REQUEST,
-      tags: tags,
-      content: eventContent,
-      privkey: currentPrivkey,
-    );
-
-    var eventStr = Uri.encodeQueryComponent(jsonEncode(event));
-    callback += '&nostr=$eventStr';
     callback += '&lnurl=$lnurl';
-
-    log('getInvoice callback $callback');
 
     Map<String, dynamic>? responseMap =
         await HttpFunctionsRepository.get(callback);

@@ -573,6 +573,12 @@ class $Nip01EventTable extends Nip01Event
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $Nip01EventTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _currentUserMeta =
+      const VerificationMeta('currentUser');
+  @override
+  late final GeneratedColumn<String> currentUser = GeneratedColumn<String>(
+      'current_user', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _pubKeyMeta = const VerificationMeta('pubKey');
   @override
   late final GeneratedColumn<String> pubKey = GeneratedColumn<String>(
@@ -612,7 +618,7 @@ class $Nip01EventTable extends Nip01Event
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [pubKey, content, id, sig, tags, kind, createdAt];
+      [currentUser, pubKey, content, id, sig, tags, kind, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -623,6 +629,14 @@ class $Nip01EventTable extends Nip01Event
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('current_user')) {
+      context.handle(
+          _currentUserMeta,
+          currentUser.isAcceptableOrUnknown(
+              data['current_user']!, _currentUserMeta));
+    } else if (isInserting) {
+      context.missing(_currentUserMeta);
+    }
     if (data.containsKey('pub_key')) {
       context.handle(_pubKeyMeta,
           pubKey.isAcceptableOrUnknown(data['pub_key']!, _pubKeyMeta));
@@ -673,6 +687,8 @@ class $Nip01EventTable extends Nip01Event
   Nip01EventData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Nip01EventData(
+      currentUser: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}current_user'])!,
       pubKey: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pub_key'])!,
       content: attachedDatabase.typeMapping
@@ -697,6 +713,7 @@ class $Nip01EventTable extends Nip01Event
 }
 
 class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
+  final String currentUser;
   final String pubKey;
   final String content;
   final String id;
@@ -705,7 +722,8 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
   final int kind;
   final DateTime createdAt;
   const Nip01EventData(
-      {required this.pubKey,
+      {required this.currentUser,
+      required this.pubKey,
       required this.content,
       required this.id,
       required this.sig,
@@ -715,6 +733,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['current_user'] = Variable<String>(currentUser);
     map['pub_key'] = Variable<String>(pubKey);
     map['content'] = Variable<String>(content);
     map['id'] = Variable<String>(id);
@@ -727,6 +746,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
 
   Nip01EventCompanion toCompanion(bool nullToAbsent) {
     return Nip01EventCompanion(
+      currentUser: Value(currentUser),
       pubKey: Value(pubKey),
       content: Value(content),
       id: Value(id),
@@ -741,6 +761,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Nip01EventData(
+      currentUser: serializer.fromJson<String>(json['currentUser']),
       pubKey: serializer.fromJson<String>(json['pubKey']),
       content: serializer.fromJson<String>(json['content']),
       id: serializer.fromJson<String>(json['id']),
@@ -754,6 +775,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'currentUser': serializer.toJson<String>(currentUser),
       'pubKey': serializer.toJson<String>(pubKey),
       'content': serializer.toJson<String>(content),
       'id': serializer.toJson<String>(id),
@@ -765,7 +787,8 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
   }
 
   Nip01EventData copyWith(
-          {String? pubKey,
+          {String? currentUser,
+          String? pubKey,
           String? content,
           String? id,
           String? sig,
@@ -773,6 +796,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
           int? kind,
           DateTime? createdAt}) =>
       Nip01EventData(
+        currentUser: currentUser ?? this.currentUser,
         pubKey: pubKey ?? this.pubKey,
         content: content ?? this.content,
         id: id ?? this.id,
@@ -784,6 +808,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
   @override
   String toString() {
     return (StringBuffer('Nip01EventData(')
+          ..write('currentUser: $currentUser, ')
           ..write('pubKey: $pubKey, ')
           ..write('content: $content, ')
           ..write('id: $id, ')
@@ -797,11 +822,12 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
 
   @override
   int get hashCode =>
-      Object.hash(pubKey, content, id, sig, tags, kind, createdAt);
+      Object.hash(currentUser, pubKey, content, id, sig, tags, kind, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Nip01EventData &&
+          other.currentUser == this.currentUser &&
           other.pubKey == this.pubKey &&
           other.content == this.content &&
           other.id == this.id &&
@@ -812,6 +838,7 @@ class Nip01EventData extends DataClass implements Insertable<Nip01EventData> {
 }
 
 class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
+  final Value<String> currentUser;
   final Value<String> pubKey;
   final Value<String> content;
   final Value<String> id;
@@ -821,6 +848,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const Nip01EventCompanion({
+    this.currentUser = const Value.absent(),
     this.pubKey = const Value.absent(),
     this.content = const Value.absent(),
     this.id = const Value.absent(),
@@ -831,6 +859,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
     this.rowid = const Value.absent(),
   });
   Nip01EventCompanion.insert({
+    required String currentUser,
     required String pubKey,
     required String content,
     required String id,
@@ -839,7 +868,8 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
     required int kind,
     required DateTime createdAt,
     this.rowid = const Value.absent(),
-  })  : pubKey = Value(pubKey),
+  })  : currentUser = Value(currentUser),
+        pubKey = Value(pubKey),
         content = Value(content),
         id = Value(id),
         sig = Value(sig),
@@ -847,6 +877,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
         kind = Value(kind),
         createdAt = Value(createdAt);
   static Insertable<Nip01EventData> custom({
+    Expression<String>? currentUser,
     Expression<String>? pubKey,
     Expression<String>? content,
     Expression<String>? id,
@@ -857,6 +888,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (currentUser != null) 'current_user': currentUser,
       if (pubKey != null) 'pub_key': pubKey,
       if (content != null) 'content': content,
       if (id != null) 'id': id,
@@ -869,7 +901,8 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
   }
 
   Nip01EventCompanion copyWith(
-      {Value<String>? pubKey,
+      {Value<String>? currentUser,
+      Value<String>? pubKey,
       Value<String>? content,
       Value<String>? id,
       Value<String>? sig,
@@ -878,6 +911,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return Nip01EventCompanion(
+      currentUser: currentUser ?? this.currentUser,
       pubKey: pubKey ?? this.pubKey,
       content: content ?? this.content,
       id: id ?? this.id,
@@ -892,6 +926,9 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (currentUser.present) {
+      map['current_user'] = Variable<String>(currentUser.value);
+    }
     if (pubKey.present) {
       map['pub_key'] = Variable<String>(pubKey.value);
     }
@@ -922,6 +959,7 @@ class Nip01EventCompanion extends UpdateCompanion<Nip01EventData> {
   @override
   String toString() {
     return (StringBuffer('Nip01EventCompanion(')
+          ..write('currentUser: $currentUser, ')
           ..write('pubKey: $pubKey, ')
           ..write('content: $content, ')
           ..write('id: $id, ')
