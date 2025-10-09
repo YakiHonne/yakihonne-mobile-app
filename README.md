@@ -1,3 +1,9 @@
+> ⚠️ **Archived Repository**  
+> This repository has been **archived** and is **no longer maintained**.  
+> The latest version of the **YakiHonne Mobile App** is now actively developed at  
+> 👉 [https://github.com/YakiHonne/mobile-app](https://github.com/YakiHonne/mobile-app)  
+> Please refer to the new repository for all ongoing development and support.
+
 # What is YakiHonne mobile app?
 
 YakiHonne mobile app is a cross-platform mobile application built with Flutter. It aims to provide users with an intuitive and seamless experience with full Nostr integration.
